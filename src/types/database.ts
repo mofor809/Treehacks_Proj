@@ -16,6 +16,7 @@ export interface Database {
           display_name: string | null
           bio: string | null
           avatar_url: string | null
+          school_year: string | null
           created_at: string
         }
         Insert: {
@@ -24,6 +25,7 @@ export interface Database {
           display_name?: string | null
           bio?: string | null
           avatar_url?: string | null
+          school_year?: string | null
           created_at?: string
         }
         Update: {
@@ -32,6 +34,73 @@ export interface Database {
           display_name?: string | null
           bio?: string | null
           avatar_url?: string | null
+          school_year?: string | null
+          created_at?: string
+        }
+      }
+      conversations: {
+        Row: {
+          id: string
+          type: 'dm' | 'group'
+          post_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          type: 'dm' | 'group'
+          post_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          type?: 'dm' | 'group'
+          post_id?: string | null
+          created_at?: string
+        }
+      }
+      conversation_participants: {
+        Row: {
+          id: string
+          conversation_id: string
+          user_id: string
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          user_id: string
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          user_id?: string
+          joined_at?: string
+        }
+      }
+      messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          sender_id: string
+          content: string
+          post_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          sender_id: string
+          content: string
+          post_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          sender_id?: string
+          content?: string
+          post_id?: string | null
           created_at?: string
         }
       }
@@ -194,3 +263,7 @@ export type MatchWithProfiles = Match & {
   user1: Profile
   user2: Profile
 }
+
+export type Conversation = Database['public']['Tables']['conversations']['Row']
+export type ConversationParticipant = Database['public']['Tables']['conversation_participants']['Row']
+export type Message = Database['public']['Tables']['messages']['Row']

@@ -53,6 +53,7 @@ You can find these in your Supabase project settings under "API".
 1. Go to SQL Editor in your Supabase dashboard
 2. Run the schema file: `supabase/schema.sql`
 3. Run the seed file: `supabase/seed.sql`
+4. Run the messaging migration: `supabase/migrations/001_messaging_and_profiles.sql` (adds `school_year` on profiles, conversations, messages, and DMs/group chats).
 
 ### 4. Configure Storage Buckets
 

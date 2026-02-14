@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Search as SearchIcon, Users, Hash, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Input } from '@/components/ui/input'
@@ -174,69 +175,79 @@ export default function SearchPage() {
                   transition={{ delay: index * 0.05 }}
                 >
                   {result.type === 'user' && result.user && (
-                    <Card className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-12 h-12">
-                          <AvatarImage src={result.user.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            {result.user.username?.[0]?.toUpperCase() || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">
-                            {result.user.display_name || result.user.username}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            @{result.user.username}
-                          </p>
+                    <Link href={`/profile/${encodeURIComponent(result.user.username ?? '')}`}>
+                      <Card className="p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={result.user.avatar_url || undefined} />
+                            <AvatarFallback className="bg-primary text-primary-foreground">
+                              {result.user.username?.[0]?.toUpperCase() || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">
+                              {result.user.display_name || result.user.username}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              @{result.user.username}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </Card>
+                      </Card>
+                    </Link>
                   )}
 
                   {result.type === 'widget' && result.widget && (
-                    <Card className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Avatar className="w-6 h-6">
-                          <AvatarImage src={result.widget.profiles?.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs">
-                            {result.widget.profiles?.username?.[0]?.toUpperCase() || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm text-muted-foreground">
-                          @{result.widget.profiles?.username}
-                        </span>
-                      </div>
-
-                      {result.widget.type === 'image' && result.widget.image_url && (
-                        <img
-                          src={result.widget.image_url}
-                          alt=""
-                          className="w-full rounded-lg mb-2 object-cover max-h-40"
-                        />
-                      )}
-
-                      {result.widget.content && (
-                        <p className="text-sm">{result.widget.content}</p>
-                      )}
-
-                      {result.widget.interest_tags && result.widget.interest_tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {result.widget.interest_tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className={`px-2 py-0.5 text-xs rounded-full ${
-                                tag.toLowerCase() === query.toLowerCase()
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-primary/10 text-primary'
-                              }`}
-                            >
-                              {tag}
+                    (() => {
+                      const WrappedCard = (
+                        <Card className={`p-4 ${result.widget.profiles?.username ? 'hover:bg-muted/50 transition-colors' : ''}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Avatar className="w-6 h-6">
+                              <AvatarImage src={result.widget.profiles?.avatar_url || undefined} />
+                              <AvatarFallback className="text-xs">
+                                {result.widget.profiles?.username?.[0]?.toUpperCase() || '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm text-muted-foreground">
+                              @{result.widget.profiles?.username}
                             </span>
-                          ))}
-                        </div>
-                      )}
-                    </Card>
+                          </div>
+                          {result.widget.type === 'image' && result.widget.image_url && (
+                            <img
+                              src={result.widget.image_url}
+                              alt=""
+                              className="w-full rounded-lg mb-2 object-cover max-h-40"
+                            />
+                          )}
+                          {result.widget.content && (
+                            <p className="text-sm">{result.widget.content}</p>
+                          )}
+                          {result.widget.interest_tags && result.widget.interest_tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {result.widget.interest_tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className={`px-2 py-0.5 text-xs rounded-full ${
+                                    tag.toLowerCase() === query.toLowerCase()
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-primary/10 text-primary'
+                                  }`}
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </Card>
+                      )
+                      return result.widget.profiles?.username ? (
+                        <Link key={result.widget.id} href={`/profile/${encodeURIComponent(result.widget.profiles.username)}`}>
+                          {WrappedCard}
+                        </Link>
+                      ) : (
+                        WrappedCard
+                      )
+                    })()
                   )}
                 </motion.div>
               ))}

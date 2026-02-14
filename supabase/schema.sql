@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   display_name TEXT,
   bio TEXT,
   avatar_url TEXT,
+  school_year TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -1,6 +1,8 @@
-import { redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ProfileContent } from './ProfileContent'
+import { ProfileContent } from '../../ProfileContent'
+import { getProfileByUsername } from '@/lib/actions/profile'
+import { rankWidgetsBySharedInterests } from '@/lib/ranking'
 import { Widget, Profile } from '@/types/database'
 
 type WidgetWithProfile = Widget & {
@@ -8,23 +10,20 @@ type WidgetWithProfile = Widget & {
   original_widget?: Widget & { profiles: Profile | null }
 }
 
-export default async function ProfilePage() {
+export default async function ProfileByUsernamePage({
+  params,
+}: {
+  params: Promise<{ username: string }>
+}) {
+  const { username } = await params
   const supabase = await createClient()
+  const { data: { user: currentUser } } = await supabase.auth.getUser()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const profile = await getProfileByUsername(username)
+  if (!profile) notFound()
 
-  if (!user) {
-    redirect('/login')
-  }
+  const isOwner = currentUser?.id === profile.id
 
-  // Get user profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  // Get user widgets
   const { data: widgets } = await supabase
     .from('widgets')
     .select(`
@@ -37,12 +36,11 @@ export default async function ProfilePage() {
         school_year
       )
     `)
-    .eq('user_id', user.id)
+    .eq('user_id', profile.id)
     .order('created_at', { ascending: false })
 
   const typedWidgets = (widgets ?? []) as unknown as WidgetWithProfile[]
 
-  // Fetch original widgets for reposts
   const repostIds = typedWidgets
     .filter(w => w.type === 'repost' && w.original_widget_id)
     .map(w => w.original_widget_id!)
@@ -74,12 +72,22 @@ export default async function ProfilePage() {
     })
   }
 
+  // When viewing another user's profile: AI-based ranking by shared interests (fallback: chronological)
+  let orderedWidgets = widgetsWithOriginals
+  if (!isOwner && currentUser) {
+    orderedWidgets = await rankWidgetsBySharedInterests(
+      widgetsWithOriginals,
+      currentUser.id,
+      supabase
+    )
+  }
+
   return (
     <ProfileContent
       profile={profile as Profile | null}
-      widgets={widgetsWithOriginals as any}
-      isOwner={true}
-      currentUserId={user.id}
+      widgets={orderedWidgets as any}
+      isOwner={isOwner}
+      currentUserId={currentUser?.id}
     />
   )
 }

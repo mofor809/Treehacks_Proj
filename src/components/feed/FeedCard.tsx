@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Repeat2, Eye, EyeOff } from 'lucide-react'
+import { Repeat2, MessageCircle, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Widget, Profile } from '@/types/database'
 import { repostWidget } from '@/lib/actions/widgets'
+import { createGroupChatForPost } from '@/lib/actions/conversations'
 import { toast } from 'sonner'
 
 interface FeedCardProps {
@@ -18,10 +20,12 @@ interface FeedCardProps {
 }
 
 export function FeedCard({ widget, currentUserId }: FeedCardProps) {
-  const [showUser, setShowUser] = useState(false)
   const [isReposting, setIsReposting] = useState(false)
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false)
 
   const isOwn = currentUserId === widget.user_id
+  const authorUsername = widget.profiles?.username ?? null
+  const profilePath = authorUsername ? `/profile/${encodeURIComponent(authorUsername)}` : null
 
   const handleRepost = async () => {
     if (isOwn) {
@@ -37,6 +41,19 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
       toast.error(result.error)
     } else {
       toast.success('Added to your profile')
+    }
+  }
+
+  const handleCreateGroupChat = async () => {
+    if (!isOwn) return
+    setIsCreatingGroup(true)
+    const result = await createGroupChatForPost(widget.id)
+    setIsCreatingGroup(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else if (result.data?.conversationId) {
+      toast.success('Group chat created')
+      window.location.href = `/chat/${result.data.conversationId}`
     }
   }
 
@@ -101,34 +118,32 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
         {/* Subtle gradient accent */}
         <div className="absolute top-0 left-0 right-0 h-24 gradient-primary opacity-[0.03] pointer-events-none" />
 
-        {/* User info (hidden by default - tap to reveal) */}
-        <motion.div
-          initial={false}
-          animate={{
-            height: showUser ? 'auto' : 0,
-            opacity: showUser ? 1 : 0,
-            marginBottom: showUser ? 16 : 0
-          }}
-          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-          className="overflow-hidden"
-        >
-          <div className="flex items-center gap-3 pb-4 border-b border-border/50">
-            <Avatar className="w-10 h-10 ring-2 ring-white/70 bevel-sm">
-              <AvatarImage src={widget.profiles?.avatar_url || undefined} />
-              <AvatarFallback className="text-sm gradient-primary text-white font-medium">
-                {widget.profiles?.username?.[0]?.toUpperCase() || '?'}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-sm font-semibold">
-                {widget.profiles?.display_name || widget.profiles?.username}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                @{widget.profiles?.username}
-              </p>
-            </div>
+        {/* Author: always visible, clickable to profile */}
+        <div className="flex items-center gap-3 pb-4 border-b border-border/50">
+          <Avatar className="w-10 h-10 ring-2 ring-white/70 bevel-sm shrink-0">
+            <AvatarImage src={widget.profiles?.avatar_url || undefined} />
+            <AvatarFallback className="text-sm gradient-primary text-white font-medium">
+              {widget.profiles?.username?.[0]?.toUpperCase() || '?'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            {profilePath ? (
+              <Link href={profilePath} className="block hover:opacity-80 transition-opacity">
+                <p className="text-sm font-semibold truncate">
+                  {widget.profiles?.display_name || widget.profiles?.username || 'Unknown'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">@{widget.profiles?.username}</p>
+              </Link>
+            ) : (
+              <>
+                <p className="text-sm font-semibold truncate">
+                  {widget.profiles?.display_name || widget.profiles?.username || 'Unknown'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">@{widget.profiles?.username ?? 'unknown'}</p>
+              </>
+            )}
           </div>
-        </motion.div>
+        </div>
 
         {/* Content */}
         <div className="relative z-10">
@@ -150,37 +165,41 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-between mt-5 pt-4 border-t border-border/40">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowUser(!showUser)}
-            className="text-muted-foreground hover:text-foreground rounded-full px-4 h-9 active-scale"
-          >
-            {showUser ? (
-              <>
-                <EyeOff className="w-4 h-4 mr-2" />
-                <span className="text-xs font-medium">Hide</span>
-              </>
-            ) : (
-              <>
-                <Eye className="w-4 h-4 mr-2" />
-                <span className="text-xs font-medium">Reveal</span>
-              </>
-            )}
-          </Button>
-
-          {!isOwn && (
+        <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/40">
+          {isOwn ? (
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleRepost}
-              disabled={isReposting}
+              onClick={handleCreateGroupChat}
+              disabled={isCreatingGroup}
               className="text-muted-foreground hover:text-foreground rounded-full px-4 h-9 active-scale"
             >
-              <Repeat2 className="w-4 h-4 mr-2" />
-              <span className="text-xs font-medium">Repost</span>
+              <Users className="w-4 h-4 mr-2" />
+              <span className="text-xs font-medium">Group chat</span>
             </Button>
+          ) : (
+            <>
+              <Link href={profilePath ? `/chat?with=${encodeURIComponent(authorUsername!)}&post=${widget.id}` : '#'}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground rounded-full px-4 h-9 active-scale"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  <span className="text-xs font-medium">Message</span>
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRepost}
+                disabled={isReposting}
+                className="text-muted-foreground hover:text-foreground rounded-full px-4 h-9 active-scale"
+              >
+                <Repeat2 className="w-4 h-4 mr-2" />
+                <span className="text-xs font-medium">Repost</span>
+              </Button>
+            </>
           )}
         </div>
       </div>

@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Feed } from '@/components/feed/Feed'
-import { BottomNav } from '@/components/navigation/BottomNav'
-import { Radio } from 'lucide-react'
+import { ProfileContent } from './ProfileContent'
 import { Widget, Profile } from '@/types/database'
 
 type WidgetWithProfile = Widget & {
@@ -10,17 +8,23 @@ type WidgetWithProfile = Widget & {
   original_widget?: Widget & { profiles: Profile | null }
 }
 
-export default async function HomePage() {
+export default async function ProfilePage() {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Redirect to login if not authenticated
   if (!user) {
     redirect('/login')
   }
 
-  // Get all widgets from all users, ordered by creation date
+  // Get user profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
+  // Get user widgets
   const { data: widgets } = await supabase
     .from('widgets')
     .select(`
@@ -32,8 +36,8 @@ export default async function HomePage() {
         avatar_url
       )
     `)
-    .order('created_at', { ascending: false })
-    .limit(50)
+    .eq('user_id', user.id)
+    .order('position', { ascending: true })
 
   const typedWidgets = (widgets ?? []) as unknown as WidgetWithProfile[]
 
@@ -70,26 +74,10 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="sticky top-0 bg-background/80 backdrop-blur-lg z-10 safe-area-inset-top">
-        <div className="flex items-center justify-center px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Radio className="w-4 h-4 text-white" />
-            </div>
-            <h1 className="text-lg font-semibold">Wavelength</h1>
-          </div>
-        </div>
-      </div>
-
-      {/* Feed */}
-      <div className="px-4 py-4">
-        <Feed widgets={widgetsWithOriginals as any} currentUserId={user?.id} />
-      </div>
-
-      {/* Bottom Navigation */}
-      <BottomNav />
-    </div>
+    <ProfileContent
+      profile={profile as Profile | null}
+      widgets={widgetsWithOriginals as any}
+      isOwner={true}
+    />
   )
 }

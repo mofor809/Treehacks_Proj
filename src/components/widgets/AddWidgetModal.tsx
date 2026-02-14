@@ -125,7 +125,7 @@ export function AddWidgetModal({ isOpen, onClose }: AddWidgetModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-black/40 z-[60]"
             onClick={handleClose}
           />
 
@@ -135,7 +135,7 @@ export function AddWidgetModal({ isOpen, onClose }: AddWidgetModalProps) {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 safe-area-inset-bottom"
+            className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[70] safe-area-inset-bottom"
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2">

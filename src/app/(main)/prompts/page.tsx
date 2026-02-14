@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
 import { ResponseForm } from '@/components/prompts/ResponseForm'
 import { ResponseCard } from '@/components/prompts/ResponseCard'
-import { Sparkles } from 'lucide-react'
+import { Sun } from 'lucide-react'
 import { Prompt, PromptResponse, Profile } from '@/types/database'
 
 type PromptResponseWithProfile = PromptResponse & {
@@ -68,7 +68,7 @@ export default async function PromptsPage() {
       <div className="sticky top-0 bg-background/80 backdrop-blur-lg z-10 safe-area-inset-top">
         <div className="flex items-center justify-center px-4 py-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
+            <Sun className="w-5 h-5 text-primary" />
             <h1 className="text-lg font-semibold">Daily Prompt</h1>
           </div>
         </div>
@@ -88,7 +88,7 @@ export default async function PromptsPage() {
         ) : (
           <Card className="p-6 text-center">
             <p className="text-muted-foreground">
-              No prompt available today. Check back later!
+              What has inspired you this week?
             </p>
           </Card>
         )}

@@ -100,7 +100,7 @@ export function ProfileContent({ profile, widgets, isOwner = false }: ProfileCon
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsModalOpen(true)}
-          className="fixed bottom-24 left-4 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center z-30"
+          className="fixed bottom-24 left-4 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center z-[60]"
         >
           <Plus className="w-6 h-6" />
         </motion.button>

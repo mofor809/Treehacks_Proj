@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Repeat2, Eye } from 'lucide-react'
-import { Card } from '@/components/ui/card'
+import { Repeat2, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Widget, Profile } from '@/types/database'
@@ -26,7 +25,7 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
 
   const handleRepost = async () => {
     if (isOwn) {
-      toast.error("You can't repost your own widget")
+      toast.error("You can't repost your own content")
       return
     }
 
@@ -37,7 +36,7 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
     if (result.error) {
       toast.error(result.error)
     } else {
-      toast.success('Reposted to your profile!')
+      toast.success('Added to your profile')
     }
   }
 
@@ -45,25 +44,25 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
     // Handle repost type
     if (widget.type === 'repost' && widget.original_widget) {
       return (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Repeat2 className="w-3 h-3" />
-            <span>
+        <div className="space-y-3">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Repeat2 className="w-3.5 h-3.5" />
+            <span className="font-medium">
               {showUser ? `@${widget.profiles?.username}` : 'Someone'} reposted
             </span>
           </div>
-          <Card className="p-3 bg-secondary/50 border-0">
+          <div className="p-4 rounded-2xl glass-subtle">
             {widget.original_widget.type === 'image' && widget.original_widget.image_url && (
               <img
                 src={widget.original_widget.image_url}
                 alt=""
-                className="w-full rounded-lg mb-2 object-cover"
+                className="w-full rounded-xl mb-3 object-cover"
               />
             )}
             {widget.original_widget.content && (
-              <p className="text-sm">{widget.original_widget.content}</p>
+              <p className="text-[15px] leading-relaxed">{widget.original_widget.content}</p>
             )}
-          </Card>
+          </div>
         </div>
       )
     }
@@ -71,15 +70,15 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
     // Image widget
     if (widget.type === 'image' && widget.image_url) {
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <img
             src={widget.image_url}
             alt=""
-            className="w-full rounded-xl object-cover"
+            className="w-full rounded-2xl object-cover"
             loading="lazy"
           />
           {widget.content && (
-            <p className="text-sm">{widget.content}</p>
+            <p className="text-[15px] leading-relaxed">{widget.content}</p>
           )}
         </div>
       )
@@ -87,33 +86,41 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
 
     // Text widget
     return (
-      <p className="text-base leading-relaxed">{widget.content}</p>
+      <p className="text-[15px] leading-[1.6]">{widget.content}</p>
     )
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
     >
-      <Card className="p-4 overflow-hidden">
+      <div className="glass bevel-lg rounded-[28px] p-5 overflow-hidden relative">
+        {/* Subtle gradient accent */}
+        <div className="absolute top-0 left-0 right-0 h-24 gradient-primary opacity-[0.03] pointer-events-none" />
+
         {/* User info (hidden by default - tap to reveal) */}
         <motion.div
           initial={false}
-          animate={{ height: showUser ? 'auto' : 0, opacity: showUser ? 1 : 0 }}
+          animate={{
+            height: showUser ? 'auto' : 0,
+            opacity: showUser ? 1 : 0,
+            marginBottom: showUser ? 16 : 0
+          }}
+          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
           className="overflow-hidden"
         >
-          <div className="flex items-center gap-2 mb-3 pb-3 border-b">
-            <Avatar className="w-8 h-8">
+          <div className="flex items-center gap-3 pb-4 border-b border-border/50">
+            <Avatar className="w-10 h-10 ring-2 ring-white/70 bevel-sm">
               <AvatarImage src={widget.profiles?.avatar_url || undefined} />
-              <AvatarFallback className="text-xs">
+              <AvatarFallback className="text-sm gradient-primary text-white font-medium">
                 {widget.profiles?.username?.[0]?.toUpperCase() || '?'}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium">
+              <p className="text-sm font-semibold">
                 {widget.profiles?.display_name || widget.profiles?.username}
               </p>
               <p className="text-xs text-muted-foreground">
@@ -124,15 +131,17 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
         </motion.div>
 
         {/* Content */}
-        {renderContent()}
+        <div className="relative z-10">
+          {renderContent()}
+        </div>
 
         {/* Interest tags */}
         {widget.interest_tags && widget.interest_tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-3">
+          <div className="flex flex-wrap gap-2 mt-4">
             {widget.interest_tags.map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-full"
+                className="px-3 py-1.5 text-xs font-medium gradient-primary-subtle text-[#3D3A7E] rounded-full"
               >
                 {tag}
               </span>
@@ -141,15 +150,24 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t">
+        <div className="flex items-center justify-between mt-5 pt-4 border-t border-border/40">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowUser(!showUser)}
-            className="text-muted-foreground"
+            className="text-muted-foreground hover:text-foreground rounded-full px-4 h-9 active-scale"
           >
-            <Eye className="w-4 h-4 mr-1" />
-            {showUser ? 'Hide' : 'Reveal'}
+            {showUser ? (
+              <>
+                <EyeOff className="w-4 h-4 mr-2" />
+                <span className="text-xs font-medium">Hide</span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-4 h-4 mr-2" />
+                <span className="text-xs font-medium">Reveal</span>
+              </>
+            )}
           </Button>
 
           {!isOwn && (
@@ -158,14 +176,14 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
               size="sm"
               onClick={handleRepost}
               disabled={isReposting}
-              className="text-muted-foreground"
+              className="text-muted-foreground hover:text-foreground rounded-full px-4 h-9 active-scale"
             >
-              <Repeat2 className="w-4 h-4 mr-1" />
-              Repost
+              <Repeat2 className="w-4 h-4 mr-2" />
+              <span className="text-xs font-medium">Repost</span>
             </Button>
           )}
         </div>
-      </Card>
+      </div>
     </motion.div>
   )
 }

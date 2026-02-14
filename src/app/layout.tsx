@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Cormorant_Garamond } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -13,9 +14,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Wavelength",
-  description: "Connect with people on the same wavelength",
+  description: "Find your frequency",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -29,7 +36,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#F5F5DC",
+  themeColor: "#FAF8F5",
 };
 
 export default function RootLayout({
@@ -40,10 +47,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased tap-highlight-none`}
+        className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} font-sans antialiased tap-highlight-none`}
       >
         {children}
-        <Toaster position="top-center" richColors />
+        <Toaster
+          position="top-center"
+          richColors
+          toastOptions={{
+            style: {
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+            },
+          }}
+        />
       </body>
     </html>
   );

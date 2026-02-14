@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion'
 import { MoreHorizontal, Repeat2, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Widget as WidgetType, Profile } from '@/types/database'
@@ -39,21 +38,21 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
   const renderContent = () => {
     if (widget.type === 'repost' && widget.original_widget) {
       return (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Repeat2 className="w-3 h-3" />
-            <span>Reposted</span>
+        <div className="space-y-3">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Repeat2 className="w-3.5 h-3.5" />
+            <span className="font-medium">Reposted</span>
           </div>
-          <Card className="p-3 bg-secondary/50 border-0">
+          <div className="p-3 rounded-2xl glass-subtle">
             {widget.original_widget.profiles && (
               <div className="flex items-center gap-2 mb-2">
-                <Avatar className="w-5 h-5">
+                <Avatar className="w-5 h-5 ring-1 ring-white/50">
                   <AvatarImage src={widget.original_widget.profiles.avatar_url || undefined} />
-                  <AvatarFallback className="text-[10px]">
+                  <AvatarFallback className="text-[10px] gradient-primary text-white">
                     {widget.original_widget.profiles.username?.[0]?.toUpperCase() || '?'}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-xs font-medium">
+                <span className="text-xs font-medium text-muted-foreground">
                   @{widget.original_widget.profiles.username}
                 </span>
               </div>
@@ -62,28 +61,28 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
               <img
                 src={widget.original_widget.image_url}
                 alt=""
-                className="w-full rounded-lg mb-2 object-cover max-h-40"
+                className="w-full rounded-xl mb-2 object-cover max-h-40"
               />
             )}
             {widget.original_widget.content && (
-              <p className="text-sm">{widget.original_widget.content}</p>
+              <p className="text-sm leading-relaxed">{widget.original_widget.content}</p>
             )}
-          </Card>
+          </div>
         </div>
       )
     }
 
     if (widget.type === 'image' && widget.image_url) {
       return (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <img
             src={widget.image_url}
             alt=""
-            className="w-full rounded-lg object-cover"
+            className="w-full rounded-2xl object-cover"
             loading="lazy"
           />
           {widget.content && (
-            <p className="text-sm">{widget.content}</p>
+            <p className="text-sm leading-relaxed">{widget.content}</p>
           )}
         </div>
       )
@@ -97,18 +96,21 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
     >
-      <Card className="p-4 relative overflow-hidden">
+      <div className="glass bevel rounded-3xl p-4 relative overflow-hidden">
+        {/* Gradient accent line */}
+        <div className="absolute top-0 left-4 right-4 h-[1px] gradient-primary opacity-20" />
+
         {/* User info */}
         {showUser && widget.profiles && (
-          <div className="flex items-center gap-2 mb-3">
-            <Avatar className="w-6 h-6">
+          <div className="flex items-center gap-2.5 mb-3">
+            <Avatar className="w-7 h-7 ring-2 ring-white/60">
               <AvatarImage src={widget.profiles.avatar_url || undefined} />
-              <AvatarFallback className="text-xs">
+              <AvatarFallback className="text-xs gradient-primary text-white font-medium">
                 {widget.profiles.username?.[0]?.toUpperCase() || '?'}
               </AvatarFallback>
             </Avatar>
@@ -123,11 +125,11 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
 
         {/* Interest tags */}
         {widget.interest_tags && widget.interest_tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-3">
+          <div className="flex flex-wrap gap-1.5 mt-3">
             {widget.interest_tags.map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-full"
+                className="px-2.5 py-1 text-[11px] font-medium gradient-primary-subtle text-[#3D3A7E] rounded-full"
               >
                 {tag}
               </span>
@@ -137,32 +139,36 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
 
         {/* Owner menu */}
         {isOwner && (
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-3 right-3">
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-7 w-7 rounded-full glass-subtle"
               onClick={() => setShowMenu(!showMenu)}
             >
               <MoreHorizontal className="w-4 h-4" />
             </Button>
             {showMenu && (
-              <div className="absolute right-0 mt-1 bg-card border rounded-lg shadow-lg p-1 z-10">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="absolute right-0 mt-1 glass bevel rounded-2xl p-1.5 z-10 min-w-[120px]"
+              >
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-start text-destructive hover:text-destructive"
+                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl"
                   onClick={handleDelete}
                   disabled={isDeleting}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete
                 </Button>
-              </div>
+              </motion.div>
             )}
           </div>
         )}
-      </Card>
+      </div>
     </motion.div>
   )
 }

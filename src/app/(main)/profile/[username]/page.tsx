@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ProfileContent } from '../../ProfileContent'
+import { ProfileContent } from '../ProfileContent'
 import { getProfileByUsername } from '@/lib/actions/profile'
 import { rankWidgetsBySharedInterests } from '@/lib/ranking'
 import { Widget, Profile } from '@/types/database'

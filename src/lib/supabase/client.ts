@@ -16,11 +16,9 @@ export async function sendMessageClient(
   content: string,
   postId?: string | null
 ) {
-  const { error } = await (supabase.from('messages') as any).insert({
+  return await (supabase.from('messages') as any).insert({
     conversation_id: conversationId,
     content: content.trim(),
     post_id: postId ?? null,
   })
-
-  if (error) throw error
 }

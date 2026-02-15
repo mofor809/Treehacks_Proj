@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, sendMessageClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { sendMessage } from '@/lib/actions/conversations'
 import { toast } from 'sonner'
 import { Message, Profile } from '@/types/database'
 
@@ -31,14 +29,16 @@ export function ConversationView({
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
 
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Realtime subscription for new messages
   useEffect(() => {
     const supabase = createClient()
+
     const channel = supabase
       .channel(`messages:${conversationId}`)
       .on(
@@ -49,28 +49,44 @@ export function ConversationView({
           table: 'messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new as MessageWithSender])
+        async (payload) => {
+          const msg = payload.new as Message
+
+          const { data: sender } = await supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url')
+            .eq('id', msg.sender_id)
+            .single()
+
+          setMessages((prev) => [
+            ...prev,
+            { ...msg, sender: sender as unknown as Profile },
+          ])
         }
       )
       .subscribe()
+
     return () => {
       supabase.removeChannel(channel)
     }
   }, [conversationId])
 
+  // Send message (client-side)
   const handleSend = async () => {
     const text = input.trim()
     if (!text || sending) return
+
     setSending(true)
     setInput('')
-    const result = await sendMessage(conversationId, text, postId)
+
+    const supabase = createClient()
+    const { error } = await sendMessageClient(conversationId, text, postId)
+
     setSending(false)
-    if (result.error) {
-      toast.error(result.error)
+
+    if (error) {
+      toast.error(error.message)
       setInput(text)
-    } else {
-      router.refresh()
     }
   }
 
@@ -78,10 +94,14 @@ export function ConversationView({
     <>
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && (
-          <p className="text-center text-muted-foreground text-sm">No messages yet. Say hi!</p>
+          <p className="text-center text-muted-foreground text-sm">
+            No messages yet. Say hi!
+          </p>
         )}
+
         {messages.map((m) => {
           const isMe = m.sender_id === currentUserId
+
           return (
             <div
               key={m.id}
@@ -95,21 +115,30 @@ export function ConversationView({
                   </AvatarFallback>
                 </Avatar>
               )}
+
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                  isMe ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                  isMe
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted'
                 }`}
               >
                 {!isMe && isGroup && m.sender?.username && (
-                  <p className="text-xs font-medium opacity-80 mb-0.5">@{m.sender.username}</p>
+                  <p className="text-xs font-medium opacity-80 mb-0.5">
+                    @{m.sender.username}
+                  </p>
                 )}
-                <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
+                <p className="text-sm whitespace-pre-wrap break-words">
+                  {m.content}
+                </p>
               </div>
             </div>
           )
         })}
+
         <div ref={bottomRef} />
       </div>
+
       <div className="sticky bottom-0 p-4 bg-background/80 backdrop-blur border-t border-border/50 safe-area-inset-bottom">
         <form
           onSubmit={(e) => {
@@ -124,7 +153,12 @@ export function ConversationView({
             placeholder="Message..."
             className="flex-1 rounded-full"
           />
-          <Button type="submit" disabled={sending || !input.trim()} size="icon" className="rounded-full shrink-0">
+          <Button
+            type="submit"
+            disabled={sending || !input.trim()}
+            size="icon"
+            className="rounded-full shrink-0"
+          >
             Send
           </Button>
         </form>
@@ -132,3 +166,4 @@ export function ConversationView({
     </>
   )
 }
+

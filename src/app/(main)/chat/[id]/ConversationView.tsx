@@ -79,7 +79,6 @@ export function ConversationView({
     setSending(true)
     setInput('')
 
-    const supabase = createClient()
     const { error } = await sendMessageClient(conversationId, text, postId)
 
     setSending(false)

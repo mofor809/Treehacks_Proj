@@ -10,12 +10,13 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated', data: null }
 
-  const { data: otherProfile } = await supabase
+  const { data: otherProfileData } = await supabase
     .from('profiles')
     .select('id')
     .eq('username', otherUsername)
     .single()
 
+  const otherProfile = otherProfileData as { id: string } | null
   if (!otherProfile) return { error: 'User not found', data: null }
   if (otherProfile.id === user.id) return { error: 'Cannot message yourself', data: null }
 

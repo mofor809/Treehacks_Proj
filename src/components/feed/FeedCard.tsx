@@ -73,7 +73,7 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
               <img
                 src={widget.original_widget.image_url}
                 alt=""
-                className="w-full rounded-xl mb-3 object-cover"
+                className="w-full rounded-xl mb-3 object-cover max-h-64"
               />
             )}
             {widget.original_widget.content && (
@@ -91,7 +91,7 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
           <img
             src={widget.image_url}
             alt=""
-            className="w-full rounded-2xl object-cover"
+            className="w-full rounded-2xl object-cover max-h-64"
             loading="lazy"
           />
           {widget.content && (

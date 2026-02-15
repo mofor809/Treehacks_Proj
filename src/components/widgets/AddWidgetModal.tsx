@@ -95,7 +95,7 @@ export function AddWidgetModal({ isOpen, onClose }: AddWidgetModalProps) {
       if (result.error) {
         toast.error(result.error)
       } else {
-        toast.success('Widget added!')
+        toast.success('Posted!')
         resetForm()
         onClose()
       }
@@ -144,7 +144,7 @@ export function AddWidgetModal({ isOpen, onClose }: AddWidgetModalProps) {
 
             {/* Header */}
             <div className="flex items-center justify-between px-4 pb-4">
-              <h2 className="text-lg font-semibold">Add Widget</h2>
+              <h2 className="text-lg font-semibold">New Post</h2>
               <Button
                 variant="ghost"
                 size="icon"
@@ -250,15 +250,15 @@ export function AddWidgetModal({ isOpen, onClose }: AddWidgetModalProps) {
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="w-full h-12 text-base font-medium active-scale"
+                className="w-full h-12 text-base font-medium active-scale gradient-primary"
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Adding...
+                    Posting...
                   </>
                 ) : (
-                  'Add Widget'
+                  'Post'
                 )}
               </Button>
             </div>

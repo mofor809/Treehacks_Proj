@@ -220,6 +220,38 @@ export interface Database {
           created_at?: string
         }
       }
+      user_matches: {
+        Row: {
+          id: string
+          user1_id: string
+          user2_id: string
+          shared_interests: Record<string, string>
+          match_score: number
+          conversation_starter: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user1_id: string
+          user2_id: string
+          shared_interests: Record<string, string>
+          match_score: number
+          conversation_starter?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user1_id?: string
+          user2_id?: string
+          shared_interests?: Record<string, string>
+          match_score?: number
+          conversation_starter?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -267,3 +299,10 @@ export type MatchWithProfiles = Match & {
 export type Conversation = Database['public']['Tables']['conversations']['Row']
 export type ConversationParticipant = Database['public']['Tables']['conversation_participants']['Row']
 export type Message = Database['public']['Tables']['messages']['Row']
+export type UserMatch = Database['public']['Tables']['user_matches']['Row']
+
+// User match with profiles for display
+export type UserMatchWithProfiles = UserMatch & {
+  user1: Profile
+  user2: Profile
+}

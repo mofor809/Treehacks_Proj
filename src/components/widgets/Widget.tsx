@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { MoreHorizontal, Repeat2, Trash2 } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Widget as WidgetType, Profile } from '@/types/database'
@@ -22,6 +23,7 @@ interface WidgetProps {
 export function Widget({ widget, isOwner = false, showUser = false, onDelete }: WidgetProps) {
   const [showMenu, setShowMenu] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter()
 
   const handleDelete = async () => {
     setIsDeleting(true)
@@ -32,6 +34,7 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
     } else {
       toast.success('Post deleted')
       onDelete?.()
+      router.refresh()
     }
   }
 
@@ -39,11 +42,6 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
   const isImagePost = widget.type === 'image' && widget.image_url
   const isRepostImage = isRepost && widget.original_widget?.type === 'image' && widget.original_widget?.image_url
 
-  // Generate subtle random rotation for scrapbook effect (consistent per widget)
-  const rotation = useMemo(() => {
-    const seed = widget.id.charCodeAt(0) + widget.id.charCodeAt(1)
-    return ((seed % 5) - 2) * 0.5 // -1 to 1 degrees
-  }, [widget.id])
 
   // Image-focused layout for photo posts
   if (isImagePost || isRepostImage) {
@@ -58,8 +56,7 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        style={{ rotate: rotation }}
-      >
+              >
         <div className="relative overflow-hidden rounded-xl bevel-lg shadow-md">
           {/* Main image - natural aspect ratio */}
           <img
@@ -151,9 +148,8 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-      style={{ rotate: rotation }}
-    >
-      <div className="glass bevel-lg rounded-xl p-2 relative overflow-hidden min-h-[40px] shadow-sm">
+          >
+      <div className="glass bevel-lg rounded-xl p-3 relative overflow-hidden min-h-[60px] shadow-sm">
         {/* Gradient accent line */}
         <div className="absolute top-0 left-2 right-2 h-[1px] gradient-primary opacity-20" />
 
@@ -190,7 +186,7 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
 
         {/* Content - add right padding when owner to avoid overlap with menu */}
         <div className={isOwner ? 'pr-5' : ''}>
-          <p className="text-[11px] leading-relaxed">
+          <p className="text-[13px] leading-relaxed">
             {isRepost ? widget.original_widget?.content : widget.content}
           </p>
         </div>

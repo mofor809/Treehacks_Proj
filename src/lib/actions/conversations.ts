@@ -40,7 +40,6 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
   })
 
   if (existingDm) {
-    revalidatePath('/chat')
     return { data: { conversationId: existingDm.id, isNew: false } }
   }
 
@@ -58,7 +57,6 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
     { conversation_id: newConv.id, user_id: user2 },
   ])
 
-  revalidatePath('/chat')
   return { data: { conversationId: newConv.id, isNew: true } }
 }
 

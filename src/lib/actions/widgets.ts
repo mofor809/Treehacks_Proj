@@ -119,6 +119,21 @@ export async function deleteWidget(widgetId: string) {
     return { error: 'Not authenticated' }
   }
 
+  // First verify the widget exists and belongs to this user
+  const { data: widget } = await supabase
+    .from('widgets')
+    .select('id, user_id')
+    .eq('id', widgetId)
+    .single()
+
+  if (!widget) {
+    return { error: 'Post not found' }
+  }
+
+  if (widget.user_id !== user.id) {
+    return { error: 'You can only delete your own posts' }
+  }
+
   const { error } = await (supabase
     .from('widgets') as any)
     .delete()
@@ -130,6 +145,7 @@ export async function deleteWidget(widgetId: string) {
   }
 
   revalidatePath('/profile')
+  revalidatePath('/')
   return { success: true }
 }
 

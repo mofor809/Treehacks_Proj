@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ConversationView } from './ConversationView'
+import { ConversationView } from './ConversationView.jsx'
 import { getMessages, getUserIdsWhoMessagedAboutPost } from '@/lib/actions/conversations'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -44,7 +44,7 @@ export default async function ConversationPage({
   }
 
   return (
-    <div className="min-h-screen pb-24 flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       <div className="sticky top-0 bg-background/80 backdrop-blur-lg z-10 safe-area-inset-top border-b border-border/50">
         <div className="flex items-center gap-2 px-4 py-3">
           <Link href="/chat" className="p-2 -ml-2 rounded-full hover:bg-muted">

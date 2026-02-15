@@ -91,17 +91,18 @@ export function ConversationView({
   }
 
   return (
-    <>
+    <div className="flex flex-col flex-1 min-h-0">
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && (
           <p className="text-center text-muted-foreground text-sm">
             No messages yet. Say hi!
           </p>
         )}
-
+  
         {messages.map((m) => {
           const isMe = m.sender_id === currentUserId
-
+  
           return (
             <div
               key={m.id}
@@ -115,7 +116,7 @@ export function ConversationView({
                   </AvatarFallback>
                 </Avatar>
               )}
-
+  
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-2 ${
                   isMe
@@ -135,11 +136,12 @@ export function ConversationView({
             </div>
           )
         })}
-
+  
         <div ref={bottomRef} />
       </div>
-
-      <div className="sticky bottom-0 p-4 bg-background/80 backdrop-blur border-t border-border/50 safe-area-inset-bottom">
+  
+      {/* Input (always visible) */}
+      <div className="shrink-0 p-4 border-t bg-background pb-[env(safe-area-inset-bottom)]">
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -163,7 +165,6 @@ export function ConversationView({
           </Button>
         </form>
       </div>
-    </>
+    </div>
   )
 }
-

@@ -40,14 +40,36 @@ export default async function ChatPage({ params }: PageProps) {
   const isGroup = conversationData?.type === 'group'
   const postId = conversationData?.post_id ?? null
 
+  // Get participant info for header
+  const { data: participants } = await supabase
+    .from('conversation_participants')
+    .select('profiles(username, display_name, avatar_url)')
+    .eq('conversation_id', id)
+    .neq('user_id', user.id)
+
+  const otherUsers = participants
+    ?.map((p: any) => p.profiles)
+    .filter(Boolean) || []
+
+  const headerTitle = isGroup
+    ? 'Group Chat'
+    : otherUsers[0]?.display_name || otherUsers[0]?.username || 'Chat'
+
   return (
-    <ConversationView
-      conversationId={id}
-      initialMessages={messages ?? []}
-      currentUserId={user.id}
-      postId={postId}
-      isGroup={isGroup}
-    />
+    <div className="fixed inset-0 flex flex-col pb-24">
+      {/* Header */}
+      <div className="shrink-0 border-b bg-background px-4 py-3">
+        <h1 className="font-semibold text-center">{headerTitle}</h1>
+      </div>
+
+      <ConversationView
+        conversationId={id}
+        initialMessages={messages ?? []}
+        currentUserId={user.id}
+        postId={postId}
+        isGroup={isGroup}
+      />
+    </div>
   )
 }
 

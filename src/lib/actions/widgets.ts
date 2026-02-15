@@ -120,11 +120,13 @@ export async function deleteWidget(widgetId: string) {
   }
 
   // First verify the widget exists and belongs to this user
-  const { data: widget } = await supabase
+  const { data: widgetData } = await supabase
     .from('widgets')
     .select('id, user_id')
     .eq('id', widgetId)
     .single()
+
+  const widget = widgetData as { id: string; user_id: string } | null
 
   if (!widget) {
     return { error: 'Post not found' }

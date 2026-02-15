@@ -102,9 +102,9 @@ export default function SearchPage() {
           .limit(30)
 
         // Combine and deduplicate results
-        const allWidgets = [...filteredWidgets, ...(contentWidgets ?? [])]
-        const uniqueWidgets = allWidgets.filter((widget, index, self) =>
-          index === self.findIndex((w) => w.id === widget.id)
+        const allWidgets = [...filteredWidgets, ...((contentWidgets ?? []) as any[])]
+        const uniqueWidgets = allWidgets.filter((widget: any, index: number, self: any[]) =>
+          index === self.findIndex((w: any) => w.id === widget.id)
         ).slice(0, 30)
 
         setResults(

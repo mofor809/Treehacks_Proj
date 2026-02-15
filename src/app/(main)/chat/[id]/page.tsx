@@ -62,15 +62,16 @@ export default async function ChatPage({ params }: PageProps) {
     const otherUserId = otherUsers[0].id
     const [id1, id2] = user.id < otherUserId ? [user.id, otherUserId] : [otherUserId, user.id]
 
-    const { data: matchData } = await supabase
-      .from('user_matches')
+    const { data: matchData } = await (supabase
+      .from('user_matches') as any)
       .select('shared_interests')
       .eq('user1_id', id1)
       .eq('user2_id', id2)
       .single()
 
-    if (matchData?.shared_interests) {
-      sharedInterests = matchData.shared_interests as Record<string, string>
+    const match = matchData as { shared_interests: Record<string, string> } | null
+    if (match?.shared_interests) {
+      sharedInterests = match.shared_interests
     }
   }
 

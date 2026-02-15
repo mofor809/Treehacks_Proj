@@ -58,7 +58,8 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
     { conversation_id: newConversationId, user_id: user2 },
   ])
 
-  revalidatePath('/chat')
+  // Note: Don't call revalidatePath here - this function is called during render
+  // The redirect after this will naturally show fresh data
   return { data: { conversationId: newConversationId, isNew: true } }
 }
 

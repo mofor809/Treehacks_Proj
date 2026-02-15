@@ -96,6 +96,40 @@ export function AddWidgetModal({ isOpen, onClose }: AddWidgetModalProps) {
         toast.error(result.error)
       } else {
         toast.success('Posted!')
+
+        // Show match notification if there are new matches
+        if (result.matches && result.matches.length > 0) {
+          const match = result.matches[0]
+          setTimeout(() => {
+            toast(
+              <div className="flex flex-col gap-1">
+                <span className="font-semibold text-primary">New match found!</span>
+                <span className="text-sm">
+                  You share interests with @{match.otherUser?.username}
+                </span>
+                {match.shared_tags && match.shared_tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {match.shared_tags.slice(0, 3).map((tag: string) => (
+                      <span key={tag} className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-full">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>,
+              {
+                duration: 8000,
+                action: {
+                  label: 'View',
+                  onClick: () => {
+                    window.location.href = `/profile/${encodeURIComponent(match.otherUser?.username || '')}`
+                  },
+                },
+              }
+            )
+          }, 1000)
+        }
+
         resetForm()
         onClose()
       }

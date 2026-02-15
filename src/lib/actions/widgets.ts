@@ -130,8 +130,7 @@ export async function deleteWidget(widgetId: string) {
     return { error: 'Post not found' }
   }
 
-  const widgetData = widget as { id: string; user_id: string }
-  if (widgetData.user_id !== user.id) {
+  if (widget.user_id !== user.id) {
     return { error: 'You can only delete your own posts' }
   }
 

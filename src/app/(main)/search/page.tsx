@@ -59,7 +59,11 @@ export default function SearchPage() {
           }))
         )
       } else {
-        // Search widgets by interest tags
+        // Search widgets by interest tags - use text search for partial matching
+        // First try exact array match, then fall back to text search
+        const searchTerm = q.toLowerCase()
+
+        // Get all widgets with interest_tags and filter client-side for flexibility
         const { data: widgets } = await supabase
           .from('widgets')
           .select(`
@@ -71,11 +75,40 @@ export default function SearchPage() {
               avatar_url
             )
           `)
-          .contains('interest_tags', [q.toLowerCase()])
+          .not('interest_tags', 'is', null)
+          .limit(100)
+
+        // Filter widgets where any interest tag contains the search term
+        const filteredWidgets = (widgets ?? []).filter((widget: any) => {
+          if (!widget.interest_tags || widget.interest_tags.length === 0) return false
+          return widget.interest_tags.some((tag: string) =>
+            tag.toLowerCase().includes(searchTerm)
+          )
+        })
+
+        // Also search in content for the interest term
+        const { data: contentWidgets } = await supabase
+          .from('widgets')
+          .select(`
+            *,
+            profiles!widgets_user_id_fkey (
+              id,
+              username,
+              display_name,
+              avatar_url
+            )
+          `)
+          .ilike('content', `%${searchTerm}%`)
           .limit(30)
 
+        // Combine and deduplicate results
+        const allWidgets = [...filteredWidgets, ...(contentWidgets ?? [])]
+        const uniqueWidgets = allWidgets.filter((widget, index, self) =>
+          index === self.findIndex((w) => w.id === widget.id)
+        ).slice(0, 30)
+
         setResults(
-          (widgets ?? []).map(widget => ({
+          uniqueWidgets.map(widget => ({
             type: 'widget' as const,
             widget,
           }))

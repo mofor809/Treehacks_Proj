@@ -1,0 +1,4 @@
+# Wavelength AI Module Dependencies
+anthropic>=0.18.0
+python-dotenv>=1.0.0
+supabase>=2.0.0

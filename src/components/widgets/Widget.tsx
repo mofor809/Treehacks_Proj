@@ -30,7 +30,7 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
       toast.error(result.error)
       setIsDeleting(false)
     } else {
-      toast.success('Widget deleted')
+      toast.success('Post deleted')
       onDelete?.()
     }
   }
@@ -43,11 +43,11 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
       const original = widget.original_widget!
       if (original.type === 'image' && original.image_url) {
         return (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <img
               src={original.image_url}
               alt=""
-              className="w-full rounded-2xl object-cover"
+              className="w-full rounded-xl object-contain max-h-64"
               loading="lazy"
             />
             {original.content && (
@@ -63,11 +63,11 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
 
     if (widget.type === 'image' && widget.image_url) {
       return (
-        <div className="space-y-3">
+        <div className="space-y-2">
           <img
             src={widget.image_url}
             alt=""
-            className="w-full rounded-2xl object-cover"
+            className="w-full rounded-xl object-contain max-h-64"
             loading="lazy"
           />
           {widget.content && (
@@ -90,13 +90,30 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
     >
-      <div className="glass bevel rounded-3xl p-4 relative overflow-hidden">
+      <div className="glass bevel rounded-2xl p-2.5 relative overflow-hidden min-h-[60px]">
         {/* Gradient accent line */}
-        <div className="absolute top-0 left-4 right-4 h-[1px] gradient-primary opacity-20" />
+        <div className="absolute top-0 left-2.5 right-2.5 h-[1px] gradient-primary opacity-20" />
+
+        {/* Repost header with original poster info */}
+        {isRepost && widget.original_widget?.profiles && (
+          <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-border/30">
+            <Repeat2 className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Reposted from</span>
+            <Avatar className="w-5 h-5 ring-1 ring-white/50">
+              <AvatarImage src={widget.original_widget.profiles.avatar_url || undefined} />
+              <AvatarFallback className="text-[10px] gradient-primary text-white">
+                {widget.original_widget.profiles.username?.[0]?.toUpperCase() || '?'}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs font-medium text-muted-foreground">
+              @{widget.original_widget.profiles.username}
+            </span>
+          </div>
+        )}
 
         {/* User info */}
-        {showUser && widget.profiles && (
-          <div className="flex items-center gap-2.5 mb-3">
+        {showUser && widget.profiles && !isRepost && (
+          <div className="flex items-center gap-2 mb-2">
             <Avatar className="w-7 h-7 ring-2 ring-white/60">
               <AvatarImage src={widget.profiles.avatar_url || undefined} />
               <AvatarFallback className="text-xs gradient-primary text-white font-medium">
@@ -109,14 +126,16 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
           </div>
         )}
 
-        {/* Content */}
-        {renderContent()}
+        {/* Content - add right padding when owner to avoid overlap with menu */}
+        <div className={isOwner ? 'pr-7' : ''}>
+          {renderContent()}
+        </div>
 
         {/* Interest tags - use original widget's tags for reposts */}
         {(() => {
           const tags = isRepost ? widget.original_widget?.interest_tags : widget.interest_tags
           return tags && tags.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5 mt-3">
+            <div className="flex flex-wrap gap-1.5 mt-2">
               {tags.map((tag) => (
                 <span
                   key={tag}
@@ -129,16 +148,9 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
           ) : null
         })()}
 
-        {/* Repost indicator */}
-        {isRepost && (
-          <div className="absolute bottom-3 right-3 w-7 h-7 rounded-full glass-subtle flex items-center justify-center">
-            <Repeat2 className="w-3.5 h-3.5 text-[#3D3A7E]" />
-          </div>
-        )}
-
         {/* Owner menu */}
         {isOwner && (
-          <div className="absolute top-3 right-3">
+          <div className="absolute top-2 right-2">
             <Button
               variant="ghost"
               size="icon"
@@ -161,7 +173,7 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
                   disabled={isDeleting}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
+                  {isDeleting ? 'Deleting...' : 'Delete post'}
                 </Button>
               </motion.div>
             )}

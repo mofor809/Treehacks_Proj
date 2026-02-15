@@ -27,10 +27,10 @@ export function WidgetGrid({ widgets, isOwner = false, showUser = false }: Widge
   }
 
   return (
-    <div className="columns-2 gap-3 space-y-3">
+    <div className="columns-2 gap-2">
       <AnimatePresence mode="popLayout">
         {widgets.map((widget) => (
-          <div key={widget.id} className="break-inside-avoid mb-3">
+          <div key={widget.id} className="break-inside-avoid mb-2">
             <Widget
               widget={widget}
               isOwner={isOwner}

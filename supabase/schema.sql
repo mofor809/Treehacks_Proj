@@ -194,6 +194,58 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- =============================================
+-- USER MATCHES TABLE (AI-powered)
+-- =============================================
+-- Stores AI-generated matches between users based on semantic interest analysis
+CREATE TABLE IF NOT EXISTS user_matches (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user1_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  user2_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  shared_interests JSONB NOT NULL DEFAULT '{}',  -- {"concept": "explanation"}
+  match_score FLOAT NOT NULL DEFAULT 0,           -- 0.0 to 1.0
+  conversation_starter TEXT,                       -- AI-generated opener
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  -- Ensure unique pairs (order doesn't matter, user1_id < user2_id)
+  CONSTRAINT unique_user_match CHECK (user1_id < user2_id),
+  UNIQUE(user1_id, user2_id)
+);
+
+-- Enable RLS
+ALTER TABLE user_matches ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for user_matches
+CREATE POLICY "Users can view their own matches"
+  ON user_matches FOR SELECT
+  USING (auth.uid() = user1_id OR auth.uid() = user2_id);
+
+-- Allow service role to insert/update matches (for AI processing)
+CREATE POLICY "Service role can manage matches"
+  ON user_matches FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Indexes for fast lookup
+CREATE INDEX IF NOT EXISTS user_matches_user1_id_idx ON user_matches(user1_id);
+CREATE INDEX IF NOT EXISTS user_matches_user2_id_idx ON user_matches(user2_id);
+CREATE INDEX IF NOT EXISTS user_matches_score_idx ON user_matches(match_score DESC);
+
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_user_matches_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to auto-update updated_at
+DROP TRIGGER IF EXISTS user_matches_updated_at ON user_matches;
+CREATE TRIGGER user_matches_updated_at
+  BEFORE UPDATE ON user_matches
+  FOR EACH ROW EXECUTE FUNCTION update_user_matches_updated_at();
+
+-- =============================================
 -- STORAGE BUCKETS
 -- =============================================
 -- Run these commands to set up storage buckets

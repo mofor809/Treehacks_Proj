@@ -3,8 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { extractInterests } from '@/lib/interests'
+import { extractInterestsAI } from '@/lib/ai/interests'
 import { checkForMatches } from '@/lib/actions/matches'
+import { triggerMatchUpdate } from '@/lib/actions/ai-matches'
 import { Widget, Profile } from '@/types/database'
+
+// Feature flag: Use AI for interest extraction
+const USE_AI_EXTRACTION = process.env.ANTHROPIC_API_KEY ? true : false
 
 type WidgetWithProfile = Widget & {
   profiles: Profile | null
@@ -41,7 +46,20 @@ export async function createWidget(formData: FormData) {
   const originalWidgetId = formData.get('originalWidgetId') as string | null
 
   // Extract interests from content
-  const interestTags = content ? extractInterests(content) : []
+  // Use AI extraction if available, otherwise fall back to keyword matching
+  let interestTags: string[] = []
+  if (content) {
+    if (USE_AI_EXTRACTION) {
+      try {
+        interestTags = await extractInterestsAI([content])
+      } catch (error) {
+        console.error('AI extraction failed, falling back to keyword matching:', error)
+        interestTags = extractInterests(content)
+      }
+    } else {
+      interestTags = extractInterests(content)
+    }
+  }
 
   // Get the next position
   const { data: lastWidgetData } = await supabase
@@ -78,6 +96,14 @@ export async function createWidget(formData: FormData) {
   if (interestTags.length > 0) {
     const matchResult = await checkForMatches(user.id, interestTags)
     matches = matchResult.matches
+  }
+
+  // Trigger AI-powered match update in background
+  if (USE_AI_EXTRACTION) {
+    // Don't await - run in background
+    triggerMatchUpdate(user.id).catch((err) =>
+      console.error('Background match update failed:', err)
+    )
   }
 
   revalidatePath('/profile')

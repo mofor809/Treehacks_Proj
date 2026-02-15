@@ -14,7 +14,7 @@ type WidgetWithProfile = Widget & {
 async function ensureProfileExists(supabase: Awaited<ReturnType<typeof createClient>>, user: { id: string; user_metadata?: Record<string, unknown> }) {
   const { data: existing } = await supabase.from('profiles').select('id').eq('id', user.id).single()
   if (existing) return
-  await supabase.from('profiles').upsert(
+  await (supabase.from('profiles') as any).upsert(
     {
       id: user.id,
       username: (user.user_metadata?.username as string) ?? null,

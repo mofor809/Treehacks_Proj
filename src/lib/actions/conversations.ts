@@ -2,9 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { Profile, Message, Database } from '@/types/database'
-
-type ConversationInsert = Database['public']['Tables']['conversations']['Insert']
+import { Profile, Message } from '@/types/database'
 
 /** Get or create a DM conversation between current user and the user with the given username. */
 export async function getOrCreateDmWithUsername(otherUsername: string) {
@@ -35,7 +33,7 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
     `)
     .eq('type', 'dm')
 
-  const existingList = (existing ?? []) as ConvWithParticipants[]
+  const existingList = (existing ?? []) as unknown as ConvWithParticipants[]
   const existingDm = existingList.find((c) => {
     const participants = c.conversation_participants?.map((p) => p.user_id) ?? []
     return participants.includes(user1) && participants.includes(user2)
@@ -46,16 +44,16 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
     return { data: { conversationId: existingDm.id, isNew: false } }
   }
 
-  const { data: newConvData, error: insertConvError } = await supabase
-    .from('conversations')
-    .insert({ type: 'dm' } as ConversationInsert)
+  const { data: newConvData, error: insertConvError } = await (supabase
+    .from('conversations') as any)
+    .insert({ type: 'dm' })
     .select('id')
     .single()
 
   if (insertConvError) return { error: insertConvError.message, data: null }
 
   const newConv = newConvData as { id: string }
-  await supabase.from('conversation_participants').insert([
+  await (supabase.from('conversation_participants') as any).insert([
     { conversation_id: newConv.id, user_id: user1 },
     { conversation_id: newConv.id, user_id: user2 },
   ])
@@ -70,7 +68,7 @@ export async function sendMessage(conversationId: string, content: string, postI
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
 
-  const { error } = await supabase.from('messages').insert({
+  const { error } = await (supabase.from('messages') as any).insert({
     conversation_id: conversationId,
     sender_id: user.id,
     content: content.trim(),
@@ -113,6 +111,13 @@ export async function getMyConversations(): Promise<{
     .select('id, type, post_id, created_at')
     .in('id', convIds)
 
+  const convList = (convs ?? []) as unknown as Array<{
+    id: string
+    type: 'dm' | 'group'
+    post_id: string | null
+    created_at: string
+  }>
+
   const result: Array<{
     id: string
     type: 'dm' | 'group'
@@ -123,15 +128,15 @@ export async function getMyConversations(): Promise<{
     post?: { id: string } | null
   }> = []
 
-  for (const c of convs ?? []) {
+  for (const c of convList) {
     const { data: allParticipants } = await supabase
       .from('conversation_participants')
       .select('user_id, profiles(id, username, display_name, avatar_url)')
       .eq('conversation_id', c.id)
 
-    const others = (allParticipants ?? [])
-      .filter((p: any) => p.user_id !== user.id)
-      .map((p: any) => p.profiles)
+    const others = ((allParticipants ?? []) as any[])
+      .filter((p) => p.user_id !== user.id)
+      .map((p) => p.profiles)
       .filter(Boolean) as Profile[]
 
     const { data: lastMsg } = await supabase
@@ -142,13 +147,15 @@ export async function getMyConversations(): Promise<{
       .limit(1)
       .single()
 
+    const lastMessage = lastMsg as { content: string; created_at: string } | null
+
     result.push({
       id: c.id,
-      type: c.type as 'dm' | 'group',
+      type: c.type,
       post_id: c.post_id,
       created_at: c.created_at,
       otherParticipants: others,
-      lastMessage: lastMsg ? { content: lastMsg.content, created_at: lastMsg.created_at } : undefined,
+      lastMessage: lastMessage ? { content: lastMessage.content, created_at: lastMessage.created_at } : undefined,
       post: c.post_id ? { id: c.post_id } : null,
     })
   }
@@ -175,7 +182,7 @@ export async function getMessages(conversationId: string): Promise<{
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
 
-  const list = (messages ?? []).map((m: any) => ({
+  const list = ((messages ?? []) as any[]).map((m) => ({
     ...m,
     sender: m.sender,
   }))
@@ -189,14 +196,15 @@ export async function getUserIdsWhoMessagedAboutPost(postId: string): Promise<{ 
   if (!user) return { error: 'Not authenticated', data: [] }
 
   const { data: post } = await supabase.from('widgets').select('user_id').eq('id', postId).single()
-  if (!post || post.user_id !== user.id) return { error: 'Not your post', data: [] }
+  const postData = post as { user_id: string } | null
+  if (!postData || postData.user_id !== user.id) return { error: 'Not your post', data: [] }
 
   const { data: convParticipants } = await supabase
     .from('conversation_participants')
     .select('conversation_id, user_id')
     .eq('user_id', user.id)
 
-  const myConvIds = (convParticipants ?? []).map((p: any) => p.conversation_id)
+  const myConvIds = ((convParticipants ?? []) as any[]).map((p) => p.conversation_id)
 
   const { data: msgs } = await supabase
     .from('messages')
@@ -204,7 +212,7 @@ export async function getUserIdsWhoMessagedAboutPost(postId: string): Promise<{ 
     .eq('post_id', postId)
     .in('conversation_id', myConvIds)
 
-  const senderIds = [...new Set((msgs ?? []).map((m: any) => m.sender_id).filter((id: string) => id !== user.id))]
+  const senderIds = [...new Set(((msgs ?? []) as any[]).map((m) => m.sender_id).filter((id: string) => id !== user.id))]
   return { data: senderIds }
 }
 
@@ -217,17 +225,18 @@ export async function createGroupChatForPost(postId: string) {
   const { data: userIds, error: fetchErr } = await getUserIdsWhoMessagedAboutPost(postId)
   if (fetchErr || !userIds?.length) return { error: 'No one has messaged you about this post yet', data: null }
 
-  const { data: newConv, error: insertErr } = await supabase
-    .from('conversations')
-    .insert({ type: 'group', post_id: postId } as ConversationInsert)
+  const { data: newConv, error: insertErr } = await (supabase
+    .from('conversations') as any)
+    .insert({ type: 'group', post_id: postId })
     .select('id')
     .single()
 
   if (insertErr) return { error: insertErr.message, data: null }
 
-  const rows = [{ conversation_id: newConv.id, user_id: user.id }, ...userIds.map(uid => ({ conversation_id: newConv.id, user_id: uid }))]
-  await supabase.from('conversation_participants').insert(rows)
+  const newConvData = newConv as { id: string }
+  const rows = [{ conversation_id: newConvData.id, user_id: user.id }, ...userIds.map(uid => ({ conversation_id: newConvData.id, user_id: uid }))]
+  await (supabase.from('conversation_participants') as any).insert(rows)
 
   revalidatePath('/chat')
-  return { data: { conversationId: newConv.id } }
+  return { data: { conversationId: newConvData.id } }
 }

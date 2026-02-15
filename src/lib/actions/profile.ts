@@ -9,8 +9,8 @@ export async function updateProfileSchoolYear(schoolYear: string | null) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
 
-  const { error } = await supabase
-    .from('profiles')
+  const { error } = await (supabase
+    .from('profiles') as any)
     .update({ school_year: schoolYear || null })
     .eq('id', user.id)
 
@@ -24,8 +24,8 @@ export async function updateProfileAvatar(avatarUrl: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
 
-  const { error } = await supabase
-    .from('profiles')
+  const { error } = await (supabase
+    .from('profiles') as any)
     .update({ avatar_url: avatarUrl })
     .eq('id', user.id)
 

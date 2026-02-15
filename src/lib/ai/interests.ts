@@ -5,14 +5,25 @@
  * using Claude (Anthropic) for deep understanding of user content.
  *
  * Used for real-time extraction when users create posts.
+ * The Anthropic SDK is loaded dynamically so the app works even without it installed.
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+// =============================================================================
+// DYNAMIC ANTHROPIC CLIENT (lazy-loaded)
+// =============================================================================
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
+let _anthropic: any = null
+
+async function getAnthropicClient() {
+  if (_anthropic) return _anthropic
+  try {
+    const { default: Anthropic } = await import('@anthropic-ai/sdk')
+    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    return _anthropic
+  } catch {
+    return null
+  }
+}
 
 // =============================================================================
 // INTEREST NORMALIZATION
@@ -90,6 +101,12 @@ export async function extractInterestsAI(
   maxInterests: number = 10
 ): Promise<string[]> {
   if (!posts || posts.every((p) => !p)) {
+    return []
+  }
+
+  const anthropic = await getAnthropicClient()
+  if (!anthropic) {
+    console.warn('Anthropic SDK not available, skipping AI extraction')
     return []
   }
 
@@ -179,6 +196,12 @@ export async function matchInterestsAI(
     return {}
   }
 
+  const anthropic = await getAnthropicClient()
+  if (!anthropic) {
+    console.warn('Anthropic SDK not available, skipping AI matching')
+    return {}
+  }
+
   const prompt = `Analyze these two users' interests and find meaningful connections.
 
 USER 1 INTERESTS:
@@ -248,6 +271,11 @@ export async function generateConversationStarter(
 
   const topMatch = Object.keys(sharedInterests)[0]
   const explanation = sharedInterests[topMatch]
+
+  const anthropic = await getAnthropicClient()
+  if (!anthropic) {
+    return `Hey! I noticed we both seem to be into ${topMatch}. What got you into it?`
+  }
 
   const prompt = `Generate a casual, friendly conversation starter for two people who matched on a social app.
 

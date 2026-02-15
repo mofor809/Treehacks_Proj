@@ -218,12 +218,12 @@ export function ProfileContent({ profile, widgets, isOwner = false, currentUserI
         </div>
 
         {!isOwner && currentUserId && profileUsername && (
-          <Link href={`/chat?with=${encodeURIComponent(profileUsername)}`} className="mt-4 inline-block">
-            <Button variant="outline" size="sm" className="rounded-full">
+          <Button asChild variant="outline" size="sm" className="mt-4 inline-flex rounded-full">
+            <Link href={`/chat?with=${encodeURIComponent(profileUsername)}`}>
               <MessageCircle className="w-4 h-4 mr-2" />
               Message
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         )}
       </div>
 

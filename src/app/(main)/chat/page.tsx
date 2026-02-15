@@ -20,6 +20,7 @@ export default async function ChatPage({
 
   const { with: withUsername, post: postId } = await searchParams
 
+  let dmError: string | null = null
   if (withUsername) {
     const result = await getOrCreateDmWithUsername(withUsername)
     if (result.error) {
@@ -37,6 +38,9 @@ export default async function ChatPage({
       const q = postId ? `?post=${postId}` : ''
       redirect(`/chat/${result.data.conversationId}${q}`)
     }
+    if (result.error) {
+      dmError = result.error
+    }
   }
 
   const { data: matches } = await getUserMatches(user.id)
@@ -51,6 +55,12 @@ export default async function ChatPage({
       </div>
 
       <div className="px-4 py-4 space-y-8">
+        {dmError && (
+          <div className="p-4 bg-destructive/10 text-destructive rounded-lg text-sm">
+            Could not start conversation: {dmError}
+          </div>
+        )}
+
         {matches && matches.length > 0 && (
           <section>
             <h2 className="text-sm font-medium text-muted-foreground mb-3">Matches</h2>

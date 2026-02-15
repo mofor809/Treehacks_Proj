@@ -179,16 +179,17 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
             </Button>
           ) : (
             <>
-              <Link href={profilePath ? `/chat?with=${encodeURIComponent(authorUsername!)}&post=${widget.id}` : '#'}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground rounded-full px-4 h-9 active-scale"
-                >
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground rounded-full px-4 h-9 active-scale"
+              >
+                <Link href={profilePath ? `/chat?with=${encodeURIComponent(authorUsername!)}&post=${widget.id}` : '#'}>
                   <MessageCircle className="w-4 h-4 mr-2" />
                   <span className="text-xs font-medium">Message</span>
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"

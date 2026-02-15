@@ -18,7 +18,9 @@ export function ChatList({ conversations }: { conversations: Conv[] }) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center px-4">
         <p className="text-muted-foreground">No conversations yet.</p>
-        <p className="text-sm text-muted-foreground mt-1">Message someone from their profile or a post.</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Message someone from their profile or a post.
+        </p>
       </div>
     )
   }
@@ -58,3 +60,4 @@ export function ChatList({ conversations }: { conversations: Conv[] }) {
     </div>
   )
 }
+

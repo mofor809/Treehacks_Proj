@@ -1,65 +1,88 @@
-import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { ConversationView } from './ConversationView.jsx'
-import { getMessages, getUserIdsWhoMessagedAboutPost } from '@/lib/actions/conversations'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+'use client'
 
-export default async function ConversationPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>
-  searchParams: Promise<{ post?: string }>
-}) {
-  const { id } = await params
-  const { post: postFromUrl } = await searchParams
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/router'
 
-  const { data: participants } = await supabase
-    .from('conversation_participants')
-    .select('user_id')
-    .eq('conversation_id', id)
+type Message = {
+  id: string
+  senderId: string
+  content: string
+  createdAt: string
+}
 
-  const isParticipant = participants?.some((p: { user_id: string }) => p.user_id === user.id)
-  if (!isParticipant) notFound()
+export default function ChatPage() {
+  const router = useRouter()
+  const { id } = router.query
+  const [messages, setMessages] = useState<Message[]>([])
+  const [message, setMessage] = useState('')
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-  const { data: convData } = await supabase
-    .from('conversations')
-    .select('id, type, post_id')
-    .eq('id', id)
-    .single()
+  // Example: fetch messages when chat id changes
+  useEffect(() => {
+    if (!id) return
 
-  type ConvRow = { id: string; type: 'dm' | 'group'; post_id: string | null }
-  const conv: ConvRow | null = convData as ConvRow | null
-  if (!conv) notFound()
+    // Replace with your API call
+    setMessages([
+      { id: '1', senderId: 'user1', content: 'Hello!', createdAt: '2026-02-14T10:00' },
+      { id: '2', senderId: 'me', content: 'Hi there!', createdAt: '2026-02-14T10:01' },
+    ])
+  }, [id])
 
-  const { data: messages } = await getMessages(id)
-  let messagedAboutPostUserIds: string[] = []
-  if (conv.type === 'group' && conv.post_id) {
-    const res = await getUserIdsWhoMessagedAboutPost(conv.post_id)
-    messagedAboutPostUserIds = res.data ?? []
+  // Scroll to bottom whenever messages change
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [messages])
+
+  const sendMessage = () => {
+    if (!message.trim()) return
+
+    // Add message locally
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now().toString(), senderId: 'me', content: message, createdAt: new Date().toISOString() },
+    ])
+    setMessage('')
+
+    // TODO: call your API to persist the message
+    console.log(`Send message to conversation ${id}: ${message}`)
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      <div className="sticky top-0 bg-background/80 backdrop-blur-lg z-10 safe-area-inset-top border-b border-border/50">
-        <div className="flex items-center gap-2 px-4 py-3">
-          <Link href="/chat" className="p-2 -ml-2 rounded-full hover:bg-muted">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <span className="font-semibold">Chat</span>
-        </div>
+    <div className="flex flex-col h-screen">
+      {/* Messages list */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+        {messages.length === 0 && (
+          <p className="text-center text-muted-foreground mt-4">No messages yet. Say hi!</p>
+        )}
+        {messages.map((m) => (
+          <div
+            key={m.id}
+            className={`p-2 rounded-lg max-w-xs ${
+              m.senderId === 'me' ? 'bg-primary text-white ml-auto' : 'bg-muted text-black'
+            }`}
+          >
+            {m.content}
+          </div>
+        ))}
       </div>
-      <ConversationView
-        conversationId={id}
-        initialMessages={messages ?? []}
-        currentUserId={user.id}
-        postId={postFromUrl || conv.post_id}
-        isGroup={conv.type === 'group'}
-      />
+
+      {/* Input area */}
+      <div className="p-4 border-t flex gap-2">
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+          placeholder="Type a message..."
+          className="flex-1 border rounded px-3 py-2"
+        />
+        <button
+          onClick={sendMessage}
+          className="bg-primary text-white px-4 py-2 rounded"
+        >
+          Send
+        </button>
+      </div>
     </div>
   )
 }

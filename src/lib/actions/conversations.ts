@@ -43,21 +43,23 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
     return { data: { conversationId: existingDm.id, isNew: false } }
   }
 
-  const { data: newConvData, error: insertConvError } = await (supabase
+  // Generate ID upfront so we don't need .select() after insert.
+  // (.select() triggers a SELECT which fails RLS because no participants exist yet)
+  const newConversationId = crypto.randomUUID()
+
+  const { error: insertConvError } = await (supabase
     .from('conversations') as any)
-    .insert({ type: 'dm' })
-    .select('id')
-    .single()
+    .insert({ id: newConversationId, type: 'dm' })
 
   if (insertConvError) return { error: insertConvError.message, data: null }
 
-  const newConv = newConvData as { id: string }
   await (supabase.from('conversation_participants') as any).insert([
-    { conversation_id: newConv.id, user_id: user1 },
-    { conversation_id: newConv.id, user_id: user2 },
+    { conversation_id: newConversationId, user_id: user1 },
+    { conversation_id: newConversationId, user_id: user2 },
   ])
 
-  return { data: { conversationId: newConv.id, isNew: true } }
+  revalidatePath('/chat')
+  return { data: { conversationId: newConversationId, isNew: true } }
 }
 
 /** Send a message. Optionally link to a post (for "message about this post"). */
@@ -223,18 +225,17 @@ export async function createGroupChatForPost(postId: string) {
   const { data: userIds, error: fetchErr } = await getUserIdsWhoMessagedAboutPost(postId)
   if (fetchErr || !userIds?.length) return { error: 'No one has messaged you about this post yet', data: null }
 
-  const { data: newConv, error: insertErr } = await (supabase
+  const newConversationId = crypto.randomUUID()
+
+  const { error: insertErr } = await (supabase
     .from('conversations') as any)
-    .insert({ type: 'group', post_id: postId })
-    .select('id')
-    .single()
+    .insert({ id: newConversationId, type: 'group', post_id: postId })
 
   if (insertErr) return { error: insertErr.message, data: null }
 
-  const newConvData = newConv as { id: string }
-  const rows = [{ conversation_id: newConvData.id, user_id: user.id }, ...userIds.map(uid => ({ conversation_id: newConvData.id, user_id: uid }))]
+  const rows = [{ conversation_id: newConversationId, user_id: user.id }, ...userIds.map(uid => ({ conversation_id: newConversationId, user_id: uid }))]
   await (supabase.from('conversation_participants') as any).insert(rows)
 
   revalidatePath('/chat')
-  return { data: { conversationId: newConvData.id } }
+  return { data: { conversationId: newConversationId } }
 }

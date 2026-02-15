@@ -20,12 +20,17 @@ export default function MessageButton({ username, postId }: Props) {
       const { data, error } = await getOrCreateDmWithUsername(username)
       if (error || !data) {
         console.error('Failed to get/create conversation', error)
+        alert(`Error: ${error || 'Failed to create conversation'}`)
+        setLoading(false)
         return
       }
 
       const { conversationId } = data
+      console.log('Navigating to:', `/chat/${conversationId}`)
       router.push(`/chat/${conversationId}`)
-    } finally {
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      alert(`Unexpected error: ${err}`)
       setLoading(false)
     }
   }

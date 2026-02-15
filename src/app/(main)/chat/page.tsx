@@ -7,7 +7,7 @@ import { getOrCreateDmWithUsername } from '@/lib/actions/conversations'
 import { Card } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ChatList } from './ChatList'
-import { MessageCircle, Sparkles } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
 
 export default async function ChatPage({
   searchParams,
@@ -22,6 +22,17 @@ export default async function ChatPage({
 
   if (withUsername) {
     const result = await getOrCreateDmWithUsername(withUsername)
+    if (result.error) {
+      console.error('Error creating conversation:', result.error)
+      return (
+        <div className="min-h-screen pb-24 flex items-center justify-center">
+          <div className="text-center px-4">
+            <p className="text-red-500 mb-2">Failed to start conversation</p>
+            <p className="text-sm text-muted-foreground">{result.error}</p>
+          </div>
+        </div>
+      )
+    }
     if (result.data?.conversationId) {
       const q = postId ? `?post=${postId}` : ''
       redirect(`/chat/${result.data.conversationId}${q}`)

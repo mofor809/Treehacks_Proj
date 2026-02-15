@@ -26,12 +26,14 @@ export default async function ConversationPage({
   const isParticipant = participants?.some((p: { user_id: string }) => p.user_id === user.id)
   if (!isParticipant) notFound()
 
-  const { data: conv } = await supabase
+  const { data: convData } = await supabase
     .from('conversations')
     .select('id, type, post_id')
     .eq('id', id)
     .single()
 
+  type ConvRow = { id: string; type: 'dm' | 'group'; post_id: string | null }
+  const conv: ConvRow | null = convData as ConvRow | null
   if (!conv) notFound()
 
   const { data: messages } = await getMessages(id)

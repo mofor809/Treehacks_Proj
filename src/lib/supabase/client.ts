@@ -16,9 +16,27 @@ export async function sendMessageClient(
   content: string,
   postId?: string | null
 ) {
+  const trimmed = content.trim()
+  if (!trimmed) {
+    return { data: null, error: { message: 'Message cannot be empty' } }
+  }
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return {
+      data: null,
+      error: { message: authError?.message ?? 'Not authenticated' },
+    }
+  }
+
   return await (supabase.from('messages') as any).insert({
     conversation_id: conversationId,
-    content: content.trim(),
+    sender_id: user.id,
+    content: trimmed,
     post_id: postId ?? null,
   })
 }

@@ -35,40 +35,29 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
     }
   }
 
+  const isRepost = widget.type === 'repost' && widget.original_widget
+
   const renderContent = () => {
-    if (widget.type === 'repost' && widget.original_widget) {
+    // For reposts, render the original widget's content directly
+    if (isRepost) {
+      const original = widget.original_widget!
+      if (original.type === 'image' && original.image_url) {
+        return (
+          <div className="space-y-3">
+            <img
+              src={original.image_url}
+              alt=""
+              className="w-full rounded-2xl object-cover"
+              loading="lazy"
+            />
+            {original.content && (
+              <p className="text-sm leading-relaxed">{original.content}</p>
+            )}
+          </div>
+        )
+      }
       return (
-        <div className="space-y-3">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Repeat2 className="w-3.5 h-3.5" />
-            <span className="font-medium">Reposted</span>
-          </div>
-          <div className="p-3 rounded-2xl glass-subtle">
-            {widget.original_widget.profiles && (
-              <div className="flex items-center gap-2 mb-2">
-                <Avatar className="w-5 h-5 ring-1 ring-white/50">
-                  <AvatarImage src={widget.original_widget.profiles.avatar_url || undefined} />
-                  <AvatarFallback className="text-[10px] gradient-primary text-white">
-                    {widget.original_widget.profiles.username?.[0]?.toUpperCase() || '?'}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs font-medium text-muted-foreground">
-                  @{widget.original_widget.profiles.username}
-                </span>
-              </div>
-            )}
-            {widget.original_widget.type === 'image' && widget.original_widget.image_url && (
-              <img
-                src={widget.original_widget.image_url}
-                alt=""
-                className="w-full rounded-xl mb-2 object-cover max-h-40"
-              />
-            )}
-            {widget.original_widget.content && (
-              <p className="text-sm leading-relaxed">{widget.original_widget.content}</p>
-            )}
-          </div>
-        </div>
+        <p className="text-sm leading-relaxed">{original.content}</p>
       )
     }
 
@@ -123,17 +112,27 @@ export function Widget({ widget, isOwner = false, showUser = false, onDelete }: 
         {/* Content */}
         {renderContent()}
 
-        {/* Interest tags */}
-        {widget.interest_tags && widget.interest_tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {widget.interest_tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-2.5 py-1 text-[11px] font-medium gradient-primary-subtle text-[#3D3A7E] rounded-full"
-              >
-                {tag}
-              </span>
-            ))}
+        {/* Interest tags - use original widget's tags for reposts */}
+        {(() => {
+          const tags = isRepost ? widget.original_widget?.interest_tags : widget.interest_tags
+          return tags && tags.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2.5 py-1 text-[11px] font-medium gradient-primary-subtle text-[#3D3A7E] rounded-full"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null
+        })()}
+
+        {/* Repost indicator */}
+        {isRepost && (
+          <div className="absolute bottom-3 right-3 w-7 h-7 rounded-full glass-subtle flex items-center justify-center">
+            <Repeat2 className="w-3.5 h-3.5 text-[#3D3A7E]" />
           </div>
         )}
 

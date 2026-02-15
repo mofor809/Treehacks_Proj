@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Plus, Settings, LogOut, MessageCircle } from 'lucide-react'
+import { Plus, Settings, LogOut, MessageCircle, Camera, Loader2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,8 @@ import { WidgetGrid } from '@/components/widgets/WidgetGrid'
 import { AddWidgetModal } from '@/components/widgets/AddWidgetModal'
 import { Profile, Widget } from '@/types/database'
 import { signOut } from '@/lib/actions/auth'
-import { updateProfileSchoolYear } from '@/lib/actions/profile'
+import { updateProfileSchoolYear, updateProfileAvatar } from '@/lib/actions/profile'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -25,20 +26,65 @@ interface ProfileContentProps {
   currentUserId?: string
 }
 
-const POST = 'posts'
-const REPOSTS = 'reposts'
-
 export function ProfileContent({ profile, widgets, isOwner = false, currentUserId }: ProfileContentProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'posts' | 'reposts'>(POST)
   const [schoolYear, setSchoolYear] = useState(profile?.school_year ?? '')
   const [editingSchoolYear, setEditingSchoolYear] = useState(false)
   const [savingSchoolYear, setSavingSchoolYear] = useState(false)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  const posts = widgets.filter(w => w.type !== 'repost')
-  const reposts = widgets.filter(w => w.type === 'repost')
-  const displayWidgets = activeTab === REPOSTS ? reposts : posts
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingAvatar(true)
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        toast.error('Not authenticated')
+        return
+      }
+
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}/avatar-${Date.now()}.${fileExt}`
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true })
+
+      if (uploadError) {
+        toast.error('Failed to upload image')
+        console.error(uploadError)
+        return
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(uploadData.path)
+
+      const result = await updateProfileAvatar(publicUrl)
+
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('Profile picture updated')
+        router.refresh()
+      }
+    } catch (error) {
+      toast.error('Something went wrong')
+      console.error(error)
+    } finally {
+      setIsUploadingAvatar(false)
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = ''
+      }
+    }
+  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -82,12 +128,52 @@ export function ProfileContent({ profile, widgets, isOwner = false, currentUserI
       {/* Profile info */}
       <div className="px-4 py-6">
         <div className="flex items-start gap-4">
-          <Avatar className="w-20 h-20 shrink-0">
-            <AvatarImage src={profile?.avatar_url || undefined} />
-            <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-              {profile?.username?.[0]?.toUpperCase() || '?'}
-            </AvatarFallback>
-          </Avatar>
+          {/* Avatar with upload capability */}
+          <div className="relative shrink-0">
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
+            {isOwner ? (
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                className="relative group"
+              >
+                <Avatar className="w-20 h-20 ring-2 ring-white/60 bevel-lg">
+                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarFallback className="text-2xl gradient-primary text-white">
+                    {profile?.username?.[0]?.toUpperCase() || '?'}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Overlay on hover/tap */}
+                <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {isUploadingAvatar ? (
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  ) : (
+                    <Camera className="w-6 h-6 text-white" />
+                  )}
+                </div>
+                {/* Always show subtle camera indicator */}
+                {!isUploadingAvatar && (
+                  <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full glass bevel flex items-center justify-center">
+                    <Camera className="w-3.5 h-3.5 text-[#3D3A7E]" />
+                  </div>
+                )}
+              </button>
+            ) : (
+              <Avatar className="w-20 h-20 ring-2 ring-white/60 bevel-lg">
+                <AvatarImage src={profile?.avatar_url || undefined} />
+                <AvatarFallback className="text-2xl gradient-primary text-white">
+                  {profile?.username?.[0]?.toUpperCase() || '?'}
+                </AvatarFallback>
+              </Avatar>
+            )}
+          </div>
 
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-semibold truncate">
@@ -139,37 +225,11 @@ export function ProfileContent({ profile, widgets, isOwner = false, currentUserI
             </Button>
           </Link>
         )}
-
-        {/* Tabs: Posts | Reposts */}
-        <div className="flex gap-4 mt-4 border-b border-border/50">
-          <button
-            type="button"
-            onClick={() => setActiveTab('posts')}
-            className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'posts'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Posts ({posts.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('reposts')}
-            className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'reposts'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Reposts ({reposts.length})
-          </button>
-        </div>
       </div>
 
       {/* Widgets grid */}
       <div className="px-4">
-        <WidgetGrid widgets={displayWidgets} isOwner={isOwner} />
+        <WidgetGrid widgets={widgets} isOwner={isOwner} />
       </div>
 
       {/* Floating add button */}

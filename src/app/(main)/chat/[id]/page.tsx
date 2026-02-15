@@ -2,49 +2,48 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
-
-type Message = {
-  id: string
-  senderId: string
-  content: string
-  createdAt: string
-}
+import { getMessages, sendMessage as sendMessageServer } from '@/lib/actions/conversations'
+import type { Message, Profile } from '@/types/database'
 
 export default function ChatPage() {
   const router = useRouter()
   const { id } = router.query
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<(Message & { sender?: Profile })[]>([])
   const [message, setMessage] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Example: fetch messages when chat id changes
+  // Fetch messages
   useEffect(() => {
     if (!id) return
-
-    // Replace with your API call
-    setMessages([
-      { id: '1', senderId: 'user1', content: 'Hello!', createdAt: '2026-02-14T10:00' },
-      { id: '2', senderId: 'me', content: 'Hi there!', createdAt: '2026-02-14T10:01' },
-    ])
+    const fetch = async () => {
+      const { data, error } = await getMessages(id as string)
+      if (error) return console.error(error)
+      setMessages(data ?? [])
+    }
+    fetch()
   }, [id])
 
-  // Scroll to bottom whenever messages change
+  // Scroll to bottom
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages])
 
-  const sendMessage = () => {
-    if (!message.trim()) return
+  const sendMessage = async () => {
+    if (!message.trim() || !id) return
 
-    // Add message locally
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now().toString(), senderId: 'me', content: message, createdAt: new Date().toISOString() },
-    ])
+    // Optimistic UI update
+    const newMessage = {
+      id: Date.now().toString(),
+      senderId: 'me',
+      content: message,
+      createdAt: new Date().toISOString(),
+    }
+    setMessages((prev) => [...prev, newMessage as any])
     setMessage('')
 
-    // TODO: call your API to persist the message
-    console.log(`Send message to conversation ${id}: ${message}`)
+    // Persist via server function
+    const { error } = await sendMessageServer(id as string, newMessage.content)
+    if (error) console.error(error)
   }
 
   return (
@@ -58,7 +57,7 @@ export default function ChatPage() {
           <div
             key={m.id}
             className={`p-2 rounded-lg max-w-xs ${
-              m.senderId === 'me' ? 'bg-primary text-white ml-auto' : 'bg-muted text-black'
+              m.sender_id === 'me' ? 'bg-primary text-white ml-auto' : 'bg-muted text-black'
             }`}
           >
             {m.content}
@@ -66,8 +65,8 @@ export default function ChatPage() {
         ))}
       </div>
 
-      {/* Input area */}
-      <div className="p-4 border-t flex gap-2">
+      {/* Input box */}
+      <div className="p-4 border-t flex gap-2 bg-white">
         <input
           type="text"
           value={message}
@@ -86,3 +85,4 @@ export default function ChatPage() {
     </div>
   )
 }
+

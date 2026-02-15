@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { Profile, Message } from '@/types/database'
+import { Profile, Message, Database } from '@/types/database'
+
+type ConversationInsert = Database['public']['Tables']['conversations']['Insert']
 
 /** Get or create a DM conversation between current user and the user with the given username. */
 export async function getOrCreateDmWithUsername(otherUsername: string) {
@@ -46,7 +48,7 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
 
   const { data: newConvData, error: insertConvError } = await supabase
     .from('conversations')
-    .insert({ type: 'dm' })
+    .insert({ type: 'dm' } as ConversationInsert)
     .select('id')
     .single()
 
@@ -217,7 +219,7 @@ export async function createGroupChatForPost(postId: string) {
 
   const { data: newConv, error: insertErr } = await supabase
     .from('conversations')
-    .insert({ type: 'group', post_id: postId })
+    .insert({ type: 'group', post_id: postId } as ConversationInsert)
     .select('id')
     .single()
 

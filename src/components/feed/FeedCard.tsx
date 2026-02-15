@@ -65,7 +65,7 @@ export function FeedCard({ widget, currentUserId }: FeedCardProps) {
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Repeat2 className="w-3.5 h-3.5" />
             <span className="font-medium">
-              {showUser ? `@${widget.profiles?.username}` : 'Someone'} reposted
+              @{widget.profiles?.username ?? 'someone'} reposted
             </span>
           </div>
           <div className="p-4 rounded-2xl glass-subtle">

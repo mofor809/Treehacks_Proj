@@ -70,8 +70,8 @@ export function AddWidgetModal({ isOpen, onClose }: AddWidgetModalProps) {
           .upload(fileName, imageFile)
 
         if (uploadError) {
-          toast.error('Failed to upload image')
-          console.error(uploadError)
+          toast.error(uploadError.message || 'Failed to upload image')
+          console.error('Storage upload error:', uploadError)
           return
         }
 

@@ -10,18 +10,20 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated', data: null }
 
-  const { data: otherProfile } = await supabase
+  const { data: otherProfileData } = await supabase
     .from('profiles')
     .select('id')
     .eq('username', otherUsername)
     .single()
 
+  const otherProfile = otherProfileData as { id: string } | null
   if (!otherProfile) return { error: 'User not found', data: null }
   if (otherProfile.id === user.id) return { error: 'Cannot message yourself', data: null }
 
   const userIds = [user.id, otherProfile.id].sort()
   const [user1, user2] = userIds
 
+  type ConvWithParticipants = { id: string; conversation_participants?: { user_id: string }[] }
   const { data: existing } = await supabase
     .from('conversations')
     .select(`
@@ -31,8 +33,9 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
     `)
     .eq('type', 'dm')
 
-  const existingDm = (existing ?? []).find((c: any) => {
-    const participants = c.conversation_participants?.map((p: any) => p.user_id) ?? []
+  const existingList = (existing ?? []) as ConvWithParticipants[]
+  const existingDm = existingList.find((c) => {
+    const participants = c.conversation_participants?.map((p) => p.user_id) ?? []
     return participants.includes(user1) && participants.includes(user2)
   })
 
@@ -41,7 +44,7 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
     return { data: { conversationId: existingDm.id, isNew: false } }
   }
 
-  const { data: newConv, error: insertConvError } = await supabase
+  const { data: newConvData, error: insertConvError } = await supabase
     .from('conversations')
     .insert({ type: 'dm' })
     .select('id')
@@ -49,6 +52,7 @@ export async function getOrCreateDmWithUsername(otherUsername: string) {
 
   if (insertConvError) return { error: insertConvError.message, data: null }
 
+  const newConv = newConvData as { id: string }
   await supabase.from('conversation_participants').insert([
     { conversation_id: newConv.id, user_id: user1 },
     { conversation_id: newConv.id, user_id: user2 },

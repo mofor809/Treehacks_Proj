@@ -119,7 +119,7 @@ Return ONLY the JSON array, no other text.`
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-haiku-20240307',
       max_tokens: 500,
       messages: [{ role: 'user', content: prompt }],
     })
@@ -211,7 +211,7 @@ Return ONLY the JSON object, no other text.`
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-haiku-20240307',
       max_tokens: 800,
       messages: [{ role: 'user', content: prompt }],
     })
@@ -265,7 +265,7 @@ Return ONLY the conversation starter text, nothing else.`
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-haiku-20240307',
       max_tokens: 100,
       messages: [{ role: 'user', content: prompt }],
     })

@@ -6,11 +6,11 @@ import { motion } from 'framer-motion'
 import { Home, User, Search, MessageCircle, Sun } from 'lucide-react'
 
 const navItems = [
-  { href: '/', icon: Home, label: 'Home' },
-  { href: '/search', icon: Search, label: 'Search' },
   { href: '/prompts', icon: Sun, label: 'Prompts' },
-  { href: '/chat', icon: MessageCircle, label: 'Chat' },
+  { href: '/search', icon: Search, label: 'Search' },
+  { href: '/', icon: Home, label: 'Home' },
   { href: '/profile', icon: User, label: 'Profile' },
+  { href: '/chat', icon: MessageCircle, label: 'Chat' },
 ]
 
 export function BottomNav() {

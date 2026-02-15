@@ -10,6 +10,21 @@ type WidgetWithProfile = Widget & {
   profiles: Profile | null
 }
 
+/** Ensure the current user has a profile row (fixes FK if signup trigger missed). */
+async function ensureProfileExists(supabase: Awaited<ReturnType<typeof createClient>>, user: { id: string; user_metadata?: Record<string, unknown> }) {
+  const { data: existing } = await supabase.from('profiles').select('id').eq('id', user.id).single()
+  if (existing) return
+  await supabase.from('profiles').upsert(
+    {
+      id: user.id,
+      username: (user.user_metadata?.username as string) ?? null,
+      display_name: (user.user_metadata?.display_name as string) ?? null,
+      avatar_url: (user.user_metadata?.avatar_url as string) ?? null,
+    },
+    { onConflict: 'id' }
+  )
+}
+
 export async function createWidget(formData: FormData) {
   const supabase = await createClient()
 
@@ -17,6 +32,8 @@ export async function createWidget(formData: FormData) {
   if (!user) {
     return { error: 'Not authenticated' }
   }
+
+  await ensureProfileExists(supabase, user)
 
   const type = formData.get('type') as 'text' | 'image' | 'repost'
   const content = formData.get('content') as string | null

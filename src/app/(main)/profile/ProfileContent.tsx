@@ -177,8 +177,7 @@ export function ProfileContent({ profile, widgets, isOwner = false, currentUserI
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsModalOpen(true)}
-          className="fixed left-4 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center z-[60]"
- style={{ bottom: 'calc(6.5rem + env(safe-area-inset-bottom, 0px))' }}
+          className="fixed bottom-24 left-4 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center z-[60]"
         >
           <Plus className="w-6 h-6" />
         </motion.button>
